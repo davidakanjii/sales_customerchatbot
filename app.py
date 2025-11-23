@@ -20,7 +20,7 @@ st.set_page_config(
 @st.cache_data
 def load_data():
     try:
-        # Load credentials from Streamlit secrets
+        # Load credentials from Streamlit Secrets
         creds = Credentials.from_service_account_info(
             st.secrets["gcp_service_account"],
             scopes=[
@@ -30,18 +30,22 @@ def load_data():
         )
         gc = gspread.authorize(creds)
 
-        # Open sheet
+        # Open Google Sheet
         SHEET_NAME = "salesline_chatbot"
         sheet = gc.open(SHEET_NAME).sheet1
 
-        # Read all rows
+        # Read rows
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
+
         st.success("Data successfully loaded from Google Sheet!")
 
     except Exception as e:
+        # SHOW REAL ERROR (important for debugging)
+        st.error(f"Google Sheets connection failed: {e}")
         st.warning("Using embedded fallback data — Google Sheet not connected yet.")
 
+        # Fallback CSV data
         DATA_CSV_STRING = """
 recid,Sales order,Inventory Unit,Order Status,Delivery Date,Invoice account,Delivery address Name,Mode of delivery,Delivery terms,Item number,Net amount,Product name,Quantity Order,Requested receipt date,Requested ship date,Unit price,Quantity,Unit,Shipping Date,modifieddatetime,modifiedby,createddatetime,createdby
 5637945894,SAP0014689,fzap,Open Order,11/4/25 0:00,C28402-B0,HONEYWELL FLOUR MILLS PLC,Self -30 T,Ex works,P008966,24407627.3,WHEAT; TYPE CANADIAN RED WINTER; RAW-MATERIAL.,35000,11/4/25 0:00,11/4/25 0:00,697360.78,35,T,11/4/25 0:00,11/4/25 17:39,Iekwuazi,11/4/25 17:33,Iekwuazi
@@ -50,13 +54,14 @@ recid,Sales order,Inventory Unit,Order Status,Delivery Date,Invoice account,Deli
 """
         df = pd.read_csv(io.StringIO(DATA_CSV_STRING))
 
-    # Cleanup
+    # Clean data
     df = df.fillna("N/A")
 
     if "Sales order" in df.columns:
         df["Sales order"] = df["Sales order"].astype(str).str.strip().str.upper()
 
     return df
+
 
 # -------------------------------------------------
 # ORDER LOOKUP LOGIC
@@ -99,8 +104,9 @@ def narrate_order_details(data, customer_name):
         st.write(f"**Delivery Address:** {data['Delivery address Name']}")
         st.write(f"**Shipping Method:** {data['Mode of delivery']} ({data['Delivery terms']})")
 
+
 # -------------------------------------------------
-# MAIN APP (2-STAGE ASSISTANT UI)
+# MAIN APP (2-STAGE ASSISTANT)
 # -------------------------------------------------
 def main():
     st.title("🤖 Order Status Assistant")
@@ -109,15 +115,15 @@ def main():
     df = load_data()
 
     if df.empty:
-        st.error("Could not load data.")
+        st.error("Could not load any data.")
         return
 
-    # Initialize session state
+    # Initialize state
     if "stage" not in st.session_state:
         st.session_state.stage = "name"
         st.session_state.customer_name = ""
 
-    # Stage 1: Ask for name
+    # Stage 1 — Ask for name
     if st.session_state.stage == "name":
         st.subheader("Welcome!")
         name = st.text_input("What is your name?")
@@ -131,7 +137,7 @@ def main():
             st.session_state.stage = "order"
             st.rerun()
 
-    # Stage 2: Ask for Order ID
+    # Stage 2 — Ask for Order ID
     elif st.session_state.stage == "order":
         st.subheader(f"Hello, {st.session_state.customer_name}! 👋")
         order_id = st.text_input("Enter your Sales Order ID:")
@@ -160,6 +166,7 @@ def main():
                 narrate_order_details(result, st.session_state.customer_name)
             else:
                 st.error(f"No order found for ID **{order_id}**.")
+
 
 # -------------------------------------------------
 if __name__ == "__main__":
