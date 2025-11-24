@@ -6,10 +6,10 @@ import gspread
 from google.oauth2.service_account import Credentials
 
 # -------------------------------------------------
-# PAGE CONFIG — MUST BE FIRST STREAMLIT COMMAND
+# PAGE CONFIG
 # -------------------------------------------------
 st.set_page_config(
-    page_title="Order Status Assistant",
+    page_title="FMN Order Status Assistant AI",
     layout="wide",
     page_icon="🤖"
 )
@@ -20,7 +20,6 @@ st.set_page_config(
 @st.cache_data
 def load_data():
     try:
-        # Load credentials from Streamlit Secrets
         creds = Credentials.from_service_account_info(
             st.secrets["gcp_service_account"],
             scopes=[
@@ -30,22 +29,19 @@ def load_data():
         )
         gc = gspread.authorize(creds)
 
-        # Open Google Sheet
         SHEET_NAME = "salesline_chatbot"
         sheet = gc.open(SHEET_NAME).sheet1
 
-        # Read rows
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
 
-        st.success("Data successfully loaded from Google Sheet!")
+        # 🔕 Removed success message for users
+        print("Google Sheets loaded successfully.")
 
     except Exception as e:
-        # SHOW REAL ERROR (important for debugging)
         st.error(f"Google Sheets connection failed: {e}")
         st.warning("Using embedded fallback data — Google Sheet not connected yet.")
 
-        # Fallback CSV data
         DATA_CSV_STRING = """
 recid,Sales order,Inventory Unit,Order Status,Delivery Date,Invoice account,Delivery address Name,Mode of delivery,Delivery terms,Item number,Net amount,Product name,Quantity Order,Requested receipt date,Requested ship date,Unit price,Quantity,Unit,Shipping Date,modifieddatetime,modifiedby,createddatetime,createdby
 5637945894,SAP0014689,fzap,Open Order,11/4/25 0:00,C28402-B0,HONEYWELL FLOUR MILLS PLC,Self -30 T,Ex works,P008966,24407627.3,WHEAT; TYPE CANADIAN RED WINTER; RAW-MATERIAL.,35000,11/4/25 0:00,11/4/25 0:00,697360.78,35,T,11/4/25 0:00,11/4/25 17:39,Iekwuazi,11/4/25 17:33,Iekwuazi
@@ -54,7 +50,6 @@ recid,Sales order,Inventory Unit,Order Status,Delivery Date,Invoice account,Deli
 """
         df = pd.read_csv(io.StringIO(DATA_CSV_STRING))
 
-    # Clean data
     df = df.fillna("N/A")
 
     if "Sales order" in df.columns:
@@ -76,8 +71,11 @@ def find_order_details(order_id, df):
 
 
 def narrate_order_details(data, customer_name):
-    st.subheader(f"Order Summary for **{customer_name}**")
-    st.success(f"Sales Order **{data['Sales order']}** found!")
+    st.subheader(f"Great news, {customer_name}! 🎉")
+    st.write(
+        f"I found the details for **Sales Order {data['Sales order']}**. "
+        f"Here’s everything you need to know:"
+    )
 
     col1, col2, col3 = st.columns(3)
 
@@ -109,8 +107,8 @@ def narrate_order_details(data, customer_name):
 # MAIN APP (2-STAGE ASSISTANT)
 # -------------------------------------------------
 def main():
-    st.title("🤖 Order Status Assistant")
-    st.write("A simple lookup tool for sales orders.")
+    st.title("🤖 FMN Order Status Assistant AI")
+    st.write("A simple lookup tool for checking FMN customer sales orders.")
 
     df = load_data()
 
@@ -118,17 +116,17 @@ def main():
         st.error("Could not load any data.")
         return
 
-    # Initialize state
+    # Initialize session state
     if "stage" not in st.session_state:
         st.session_state.stage = "name"
         st.session_state.customer_name = ""
 
     # Stage 1 — Ask for name
     if st.session_state.stage == "name":
-        st.subheader("Welcome!")
-        name = st.text_input("What is your name?")
+        st.header("Welcome! I'm your Order Status Assistant.")
+        name = st.text_input("Please tell me your name so I can address you properly:")
 
-        if st.button("Start Lookup"):
+        if st.button("Confirm"):
             if name.strip() == "":
                 st.error("Please enter a valid name.")
                 return
@@ -137,9 +135,9 @@ def main():
             st.session_state.stage = "order"
             st.rerun()
 
-    # Stage 2 — Ask for Order ID
+    # Stage 2 — Ask for order ID
     elif st.session_state.stage == "order":
-        st.subheader(f"Hello, {st.session_state.customer_name}! 👋")
+        st.subheader(f"Hello, {st.session_state.customer_name}! Ready to check your order status?")
         order_id = st.text_input("Enter your Sales Order ID:")
 
         colA, colB = st.columns(2)
@@ -158,7 +156,7 @@ def main():
                 st.error("Please enter an order ID.")
                 return
 
-            with st.spinner("Searching database..."):
+            with st.spinner("Searching FMN order records..."):
                 time.sleep(1)
                 result = find_order_details(order_id, df)
 
@@ -168,6 +166,5 @@ def main():
                 st.error(f"No order found for ID **{order_id}**.")
 
 
-# -------------------------------------------------
 if __name__ == "__main__":
     main()
