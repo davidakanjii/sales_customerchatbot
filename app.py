@@ -108,7 +108,7 @@ def narrate_order_details(data, customer_name):
 # -------------------------------------------------
 def main():
     st.title("🤖 FMN Order Status Assistant AI")
-    st.write("A simple lookup tool for checking FMN customer sales orders.")
+    st.write("Your virtual FMN support agent for instant order verification and delivery insights — powered by a smart order-intelligence engine designed to simplify customer experience..")
 
     df = load_data()
 
