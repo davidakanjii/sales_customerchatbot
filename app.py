@@ -89,8 +89,8 @@ def narrate_order_details(data, customer_name):
     # Financials
     with col2:
         st.write("### Financials")
-        st.metric("Net Amount", f"${float(data['Net amount']):,.2f}")
-        st.write(f"**Unit Price:** ${float(data['Unit price']):,.2f}")
+        st.metric("Net Amount", f"₦{float(data['Net amount']):,.2f}")
+        st.write(f"**Unit Price:** ₦{float(data['Unit price']):,.2f}")
         st.write(f"**Invoice Account:** {data['Invoice account']}")
 
     # Delivery & Quantity
