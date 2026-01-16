@@ -35,7 +35,6 @@ def load_data():
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
 
-        # 🔕 Removed success message for users
         print("Google Sheets loaded successfully.")
 
     except Exception as e:
@@ -59,48 +58,78 @@ recid,Sales order,Inventory Unit,Order Status,Delivery Date,Invoice account,Deli
 
 
 # -------------------------------------------------
-# ORDER LOOKUP LOGIC
+# ORDER LOOKUP LOGIC (MODIFIED TO RETURN ALL ITEMS)
 # -------------------------------------------------
 def find_order_details(order_id, df):
     order_clean = order_id.strip().upper()
-    row = df[df["Sales order"] == order_clean]
+    rows = df[df["Sales order"] == order_clean]
 
-    if row.empty:
+    if rows.empty:
         return None
-    return row.iloc[0].to_dict()
+    return rows  # Return all matching rows instead of just the first one
 
 
-def narrate_order_details(data, customer_name):
+def narrate_order_details(order_df, customer_name):
+    """
+    Display order details for orders with multiple line items
+    """
+    # Get common order information from the first row
+    first_row = order_df.iloc[0]
+    order_id = first_row['Sales order']
+    
     st.subheader(f"Great news, {customer_name}! 🎉")
     st.write(
-        f"I found the details for **Sales Order {data['Sales order']}**. "
-        f"Here’s everything you need to know:"
+        f"I found **{len(order_df)} item(s)** for **Sales Order {order_id}**. "
+        f"Here's everything you need to know:"
     )
 
+    # Display common order information
     col1, col2, col3 = st.columns(3)
 
-    # Status & Product
     with col1:
-        st.write("### Status & Product")
-        st.info(f"**Order Status:** {data['Order Status']}")
-        st.write(f"**Product:** {data['Product name']}")
-        st.write(f"**Item Number:** {data['Item number']}")
+        st.write("### Order Information")
+        st.info(f"**Order Status:** {first_row['Order Status']}")
+        st.write(f"**Invoice Account:** {first_row['Invoice account']}")
+        st.write(f"**Total Items:** {len(order_df)}")
 
-    # Financials
     with col2:
-        st.write("### Financials")
-        st.metric("Net Amount", f"₦{float(data['Net amount']):,.2f}")
-        st.write(f"**Unit Price:** ₦{float(data['Unit price']):,.2f}")
-        st.write(f"**Invoice Account:** {data['Invoice account']}")
+        st.write("### Delivery Details")
+        st.warning(f"**Delivery Date:** {first_row['Delivery Date']}")
+        st.write(f"**Ship Date:** {first_row['Shipping Date']}")
+        st.write(f"**Delivery Address:** {first_row['Delivery address Name']}")
 
-    # Delivery & Quantity
     with col3:
-        st.write("### Delivery")
-        st.warning(f"**Delivery Date:** {data['Delivery Date']}")
-        st.write(f"**Ship Date:** {data['Shipping Date']}")
-        st.write(f"**Quantity:** {data['Quantity Order']} {data['Unit']}")
-        st.write(f"**Delivery Address:** {data['Delivery address Name']}")
-        st.write(f"**Shipping Method:** {data['Mode of delivery']} ({data['Delivery terms']})")
+        st.write("### Shipping Information")
+        st.write(f"**Mode of Delivery:** {first_row['Mode of delivery']}")
+        st.write(f"**Delivery Terms:** {first_row['Delivery terms']}")
+        # Calculate total net amount across all items
+        total_amount = order_df['Net amount'].astype(float).sum()
+        st.metric("Total Net Amount", f"₦{total_amount:,.2f}")
+
+    st.markdown("---")
+    
+    # Display each line item
+    st.write("### 📦 Order Line Items")
+    
+    for idx, (_, item) in enumerate(order_df.iterrows(), 1):
+        with st.expander(f"**Item {idx}: {item['Product name']}**", expanded=True):
+            col_a, col_b, col_c = st.columns(3)
+            
+            with col_a:
+                st.write("**Product Details**")
+                st.write(f"• Product: {item['Product name']}")
+                st.write(f"• Item Number: {item['Item number']}")
+                st.write(f"• Quantity: {item['Quantity Order']} {item['Unit']}")
+            
+            with col_b:
+                st.write("**Pricing**")
+                st.write(f"• Unit Price: ₦{float(item['Unit price']):,.2f}")
+                st.write(f"• Net Amount: ₦{float(item['Net amount']):,.2f}")
+            
+            with col_c:
+                st.write("**Dates**")
+                st.write(f"• Requested Receipt: {item['Requested receipt date']}")
+                st.write(f"• Requested Ship: {item['Requested ship date']}")
 
 
 # -------------------------------------------------
@@ -108,7 +137,7 @@ def narrate_order_details(data, customer_name):
 # -------------------------------------------------
 def main():
     st.title("🤖 FMN Order Status Assistant AI")
-    st.write("Your virtual FMN support agent for instant order verification and delivery insights — powered by a smart order-intelligence engine designed to simplify customer experience..")
+    st.write("Your virtual FMN support agent for instant order verification and delivery insights — powered by a smart order-intelligence engine designed to simplify customer experience.")
 
     df = load_data()
 
@@ -160,7 +189,7 @@ def main():
                 time.sleep(1)
                 result = find_order_details(order_id, df)
 
-            if result:
+            if result is not None:
                 narrate_order_details(result, st.session_state.customer_name)
             else:
                 st.error(f"No order found for ID **{order_id}**.")
