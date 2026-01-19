@@ -250,7 +250,7 @@ def main():
                     st.rerun()
                     
             elif result == "invalid_invoice":
-                st.error(f"❌ **Access Denied!** The Invoice Account ID you provided does not match the Sales Order **{st.session_state.order_id}**. Please verify your credentials and try again.")
+                st.error(f"❌ **Invoice Account Mismatch!** The Invoice Account ID you entered doesn't match our records for Sales Order **{st.session_state.order_id}**. Please double-check and try again.")
                 st.warning("💡 **Tip:** Make sure you're entering the correct Invoice Account ID associated with this order.")
             else:
                 st.error(f"❌ No order found for ID **{st.session_state.order_id}**. Please check the order number and try again.")
