@@ -211,7 +211,7 @@ def main():
     elif st.session_state.stage == "validate":
         st.subheader(f"🔒 Security Validation Required")
         st.info(f"For Sales Order: **{st.session_state.order_id}**")
-        st.write("To protect your order information, please verify your identity.")
+        st.write("Please confirm your Invoice Account ID to view your order details.")
         
         invoice_account = st.text_input("Enter your Invoice Account ID:")
 
