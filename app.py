@@ -17,7 +17,7 @@ st.set_page_config(
 # -------------------------------------------------
 # LOAD DATA FROM GOOGLE SHEET (OR FALLBACK)
 # -------------------------------------------------
-@st.cache_data
+@st.cache_data(show_spinner=False)
 def load_data():
     try:
         creds = Credentials.from_service_account_info(
