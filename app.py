@@ -15,6 +15,102 @@ st.set_page_config(
     page_icon="🤖"
 )
 
+# FMN Brand Colors
+FMN_COLORS = {
+    "primary_green": "#076401",
+    "primary_orange": "#FD7601",
+    "primary_red": "#D22622",
+    "accent_green": "#92BC0C",
+    "accent_blue": "#599BD4",
+    "accent_yellow": "#F9EF10",
+    "secondary_orange": "#FFC102",
+    "navy_blue": "#19365E",
+    "background": "#FFFFFF"
+}
+
+# Custom CSS for FMN branding
+st.markdown(f"""
+    <style>
+    /* Main title styling */
+    h1 {{
+        color: {FMN_COLORS['navy_blue']} !important;
+    }}
+    
+    /* Subheaders */
+    h2, h3 {{
+        color: {FMN_COLORS['navy_blue']} !important;
+    }}
+    
+    /* Primary buttons */
+    .stButton > button[kind="primary"] {{
+        background-color: {FMN_COLORS['primary_orange']} !important;
+        color: white !important;
+        border: none !important;
+    }}
+    
+    .stButton > button[kind="primary"]:hover {{
+        background-color: {FMN_COLORS['secondary_orange']} !important;
+    }}
+    
+    /* Regular buttons */
+    .stButton > button {{
+        color: {FMN_COLORS['navy_blue']} !important;
+        border: 2px solid {FMN_COLORS['primary_green']} !important;
+    }}
+    
+    .stButton > button:hover {{
+        background-color: {FMN_COLORS['accent_green']} !important;
+        color: white !important;
+    }}
+    
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {{
+        background-color: #f8f9fa;
+    }}
+    
+    /* Success messages */
+    .stSuccess {{
+        background-color: {FMN_COLORS['primary_green']}20 !important;
+        border-left: 4px solid {FMN_COLORS['primary_green']} !important;
+    }}
+    
+    /* Warning messages */
+    .stWarning {{
+        background-color: {FMN_COLORS['primary_orange']}20 !important;
+        border-left: 4px solid {FMN_COLORS['primary_orange']} !important;
+    }}
+    
+    /* Error messages */
+    .stError {{
+        background-color: {FMN_COLORS['primary_red']}20 !important;
+        border-left: 4px solid {FMN_COLORS['primary_red']} !important;
+    }}
+    
+    /* Info boxes */
+    .stInfo {{
+        background-color: {FMN_COLORS['accent_blue']}20 !important;
+        border-left: 4px solid {FMN_COLORS['accent_blue']} !important;
+    }}
+    
+    /* Text input focus */
+    .stTextInput > div > div > input:focus {{
+        border-color: {FMN_COLORS['primary_green']} !important;
+        box-shadow: 0 0 0 0.2rem {FMN_COLORS['primary_green']}40 !important;
+    }}
+    
+    /* Expander header */
+    .streamlit-expanderHeader {{
+        background-color: {FMN_COLORS['navy_blue']}10 !important;
+        color: {FMN_COLORS['navy_blue']} !important;
+    }}
+    
+    /* Metrics */
+    [data-testid="stMetricValue"] {{
+        color: {FMN_COLORS['primary_green']} !important;
+    }}
+    </style>
+""", unsafe_allow_html=True)
+
 # -------------------------------------------------
 # CONFIGURATION & SESSION INIT
 # -------------------------------------------------
@@ -120,31 +216,49 @@ def narrate_order_details(order_df, customer_name):
     first_row = order_df.iloc[0]
     order_id = first_row['Sales order']
     
-    st.success(f"### Great news, {customer_name}! 🎉")
-    st.write(
-        f"I found **{len(order_df)} item(s)** for **Sales Order {order_id}**. "
-        f"Here's everything you need to know:"
-    )
+    st.markdown(f"""
+        <div style='background: linear-gradient(135deg, {FMN_COLORS['primary_green']}15, {FMN_COLORS['accent_green']}15); 
+                    padding: 20px; border-radius: 10px; border-left: 5px solid {FMN_COLORS['primary_green']};'>
+            <h3 style='color: {FMN_COLORS['primary_green']}; margin: 0;'>🎉 Great news, {customer_name}!</h3>
+            <p style='color: {FMN_COLORS['navy_blue']}; margin: 10px 0 0 0;'>
+                I found <strong>{len(order_df)} item(s)</strong> for <strong>Sales Order {order_id}</strong>. 
+                Here's everything you need to know:
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
+    st.write("")  # spacing
 
     # Display common order information
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.write("### Order Information")
-        st.info(f"**Order Status:** {first_row['Order Status']}")
-        st.write(f"**Invoice Account:** {first_row['Invoice account']}")
-        st.write(f"**Total Items:** {len(order_df)}")
+        st.markdown(f"<h3 style='color: {FMN_COLORS['navy_blue']}'>📋 Order Information</h3>", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div style='background-color: {FMN_COLORS['accent_blue']}20; padding: 15px; border-radius: 8px; border-left: 4px solid {FMN_COLORS['accent_blue']};'>
+                <p style='margin: 5px 0; color: {FMN_COLORS['navy_blue']};'><strong>Order Status:</strong> {first_row['Order Status']}</p>
+                <p style='margin: 5px 0; color: {FMN_COLORS['navy_blue']};'><strong>Invoice Account:</strong> {first_row['Invoice account']}</p>
+                <p style='margin: 5px 0; color: {FMN_COLORS['navy_blue']};'><strong>Total Items:</strong> {len(order_df)}</p>
+            </div>
+        """, unsafe_allow_html=True)
 
     with col2:
-        st.write("### Delivery Details")
-        st.warning(f"**Delivery Date:** {first_row['Delivery Date']}")
-        st.write(f"**Ship Date:** {first_row['Shipping Date']}")
-        st.write(f"**Delivery Address:** {first_row['Delivery address Name']}")
+        st.markdown(f"<h3 style='color: {FMN_COLORS['navy_blue']}'>🚚 Delivery Details</h3>", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div style='background-color: {FMN_COLORS['primary_orange']}20; padding: 15px; border-radius: 8px; border-left: 4px solid {FMN_COLORS['primary_orange']};'>
+                <p style='margin: 5px 0; color: {FMN_COLORS['navy_blue']};'><strong>Delivery Date:</strong> {first_row['Delivery Date']}</p>
+                <p style='margin: 5px 0; color: {FMN_COLORS['navy_blue']};'><strong>Ship Date:</strong> {first_row['Shipping Date']}</p>
+                <p style='margin: 5px 0; color: {FMN_COLORS['navy_blue']};'><strong>Address:</strong> {first_row['Delivery address Name']}</p>
+            </div>
+        """, unsafe_allow_html=True)
 
     with col3:
-        st.write("### Shipping Information")
-        st.write(f"**Mode of Delivery:** {first_row['Mode of delivery']}")
-        st.write(f"**Delivery Terms:** {first_row['Delivery terms']}")
+        st.markdown(f"<h3 style='color: {FMN_COLORS['navy_blue']}'>📦 Shipping Info</h3>", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div style='background-color: {FMN_COLORS['primary_green']}20; padding: 15px; border-radius: 8px; border-left: 4px solid {FMN_COLORS['primary_green']};'>
+                <p style='margin: 5px 0; color: {FMN_COLORS['navy_blue']};'><strong>Mode:</strong> {first_row['Mode of delivery']}</p>
+                <p style='margin: 5px 0; color: {FMN_COLORS['navy_blue']};'><strong>Terms:</strong> {first_row['Delivery terms']}</p>
+            </div>
+        """, unsafe_allow_html=True)
         # Calculate total net amount across all items
         total_amount = order_df['Net amount'].astype(float).sum()
         st.metric("Total Net Amount", f"₦{total_amount:,.2f}")
@@ -152,7 +266,7 @@ def narrate_order_details(order_df, customer_name):
     st.markdown("---")
     
     # Display each line item
-    st.write("### 📦 Order Line Items")
+    st.markdown(f"<h3 style='color: {FMN_COLORS['navy_blue']}'>📦 Order Line Items</h3>", unsafe_allow_html=True)
     
     for idx, (_, item) in enumerate(order_df.iterrows(), 1):
         with st.expander(f"**Item {idx}: {item['Product name']}**", expanded=True):
