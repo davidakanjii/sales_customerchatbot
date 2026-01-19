@@ -238,7 +238,8 @@ def main():
                 time.sleep(1.5)
                 result = find_order_details(st.session_state.order_id, invoice_clean, df)
 
-            if result is not None and result != "invalid_invoice":
+            if isinstance(result, pd.DataFrame):
+                # Successfully found and validated order
                 narrate_order_details(result, st.session_state.customer_name)
                 
                 # Option to check another order
