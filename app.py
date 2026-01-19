@@ -53,20 +53,36 @@ recid,Sales order,Inventory Unit,Order Status,Delivery Date,Invoice account,Deli
 
     if "Sales order" in df.columns:
         df["Sales order"] = df["Sales order"].astype(str).str.strip().str.upper()
+    
+    if "Invoice account" in df.columns:
+        df["Invoice account"] = df["Invoice account"].astype(str).str.strip().str.upper()
 
     return df
 
 
 # -------------------------------------------------
-# ORDER LOOKUP LOGIC (MODIFIED TO RETURN ALL ITEMS)
+# ORDER LOOKUP LOGIC WITH INVOICE VALIDATION
 # -------------------------------------------------
-def find_order_details(order_id, df):
+def find_order_details(order_id, invoice_account, df):
+    """
+    Find order details with two-factor verification:
+    1. Sales Order ID must match
+    2. Invoice Account ID must match
+    """
     order_clean = order_id.strip().upper()
-    rows = df[df["Sales order"] == order_clean]
+    invoice_clean = invoice_account.strip().upper()
+    
+    # Filter by both Sales Order and Invoice Account
+    rows = df[(df["Sales order"] == order_clean) & (df["Invoice account"] == invoice_clean)]
 
     if rows.empty:
-        return None
-    return rows  # Return all matching rows instead of just the first one
+        # Check if order exists but invoice account doesn't match
+        order_exists = df[df["Sales order"] == order_clean]
+        if not order_exists.empty:
+            return "invalid_invoice"  # Order exists but wrong invoice account
+        return None  # Order doesn't exist at all
+    
+    return rows
 
 
 def narrate_order_details(order_df, customer_name):
@@ -133,7 +149,7 @@ def narrate_order_details(order_df, customer_name):
 
 
 # -------------------------------------------------
-# MAIN APP (2-STAGE ASSISTANT)
+# MAIN APP (3-STAGE ASSISTANT WITH SECURITY)
 # -------------------------------------------------
 def main():
     st.title("🤖 FMN Order Status Assistant AI")
@@ -149,6 +165,7 @@ def main():
     if "stage" not in st.session_state:
         st.session_state.stage = "name"
         st.session_state.customer_name = ""
+        st.session_state.order_id = ""
 
     # Stage 1 — Ask for name
     if st.session_state.stage == "name":
@@ -172,27 +189,70 @@ def main():
         colA, colB = st.columns(2)
 
         with colA:
-            lookup = st.button("Check Status")
+            proceed = st.button("Next")
         with colB:
             restart = st.button("Restart")
 
         if restart:
             st.session_state.stage = "name"
+            st.session_state.order_id = ""
             st.rerun()
 
-        if lookup:
+        if proceed:
             if order_id.strip() == "":
                 st.error("Please enter an order ID.")
                 return
 
-            with st.spinner("Searching FMN order records..."):
-                time.sleep(1)
-                result = find_order_details(order_id, df)
+            st.session_state.order_id = order_id.strip()
+            st.session_state.stage = "validate"
+            st.rerun()
 
-            if result is not None:
+    # Stage 3 — Validate with Invoice Account
+    elif st.session_state.stage == "validate":
+        st.subheader(f"🔒 Security Validation Required")
+        st.info(f"For Sales Order: **{st.session_state.order_id}**")
+        st.write("To protect your order information, please verify your identity.")
+        
+        invoice_account = st.text_input("Enter your Invoice Account ID:")
+
+        colA, colB = st.columns(2)
+
+        with colA:
+            verify = st.button("Verify & View Order")
+        with colB:
+            back = st.button("Back")
+
+        if back:
+            st.session_state.stage = "order"
+            st.rerun()
+
+        if verify:
+            if invoice_account.strip() == "":
+                st.error("Please enter your Invoice Account ID.")
+                return
+
+            # Clean the invoice account input: uppercase and trim spaces
+            invoice_clean = invoice_account.strip().upper()
+
+            with st.spinner("Verifying credentials and searching FMN order records..."):
+                time.sleep(1.5)
+                result = find_order_details(st.session_state.order_id, invoice_clean, df)
+
+            if result is not None and result != "invalid_invoice":
                 narrate_order_details(result, st.session_state.customer_name)
+                
+                # Option to check another order
+                st.markdown("---")
+                if st.button("Check Another Order"):
+                    st.session_state.stage = "order"
+                    st.session_state.order_id = ""
+                    st.rerun()
+                    
+            elif result == "invalid_invoice":
+                st.error(f"❌ **Access Denied!** The Invoice Account ID you provided does not match the Sales Order **{st.session_state.order_id}**. Please verify your credentials and try again.")
+                st.warning("💡 **Tip:** Make sure you're entering the correct Invoice Account ID associated with this order.")
             else:
-                st.error(f"No order found for ID **{order_id}**.")
+                st.error(f"❌ No order found for ID **{st.session_state.order_id}**. Please check the order number and try again.")
 
 
 if __name__ == "__main__":
